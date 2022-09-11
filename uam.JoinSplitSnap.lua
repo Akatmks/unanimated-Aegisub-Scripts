@@ -19,24 +19,24 @@
 
 -- KF SNAPPING SETTINGS
 
-kfsb=6		-- starts before
-kfeb=10		-- ends before
-kfsa=8		-- starts after
-kfea=15		-- ends after
+kfsa=36 -- keyframe before start of the line
+kfsb=8  -- keyframe after start of the line
+kfea=12 -- keyframe before end of the line
+kfeb=48 -- keyframe after end of the line
 
 -- END OF SETTINGS
 
 script_name="Join / Split / Snap"
 script_description="Joins lines / splits lines / snaps to keyframes"
-script_author="unanimated"
-script_version="1.2"
-script_namespace="ua.JoinSplitSnap"
+script_author="unanimated, modified by Akatsumekusa"
+script_version="1.2m"
+script_namespace="uam.JoinSplitSnap"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-  script_version="1.2.0"
-  depRec=DependencyControl{feed="https://raw.githubusercontent.com/TypesettingTools/unanimated-Aegisub-Scripts/master/DependencyControl.json"}
-end
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+--   script_version="1.2.0"
+--   depRec=DependencyControl{feed="https://raw.githubusercontent.com/TypesettingTools/unanimated-Aegisub-Scripts/master/DependencyControl.json"}
+-- end
 
 function join(subs,sel)
     go=0
@@ -215,7 +215,7 @@ function split(subs,sel)
 	return sel
 end
 
-function keyframesnap(subs,sel)
+function keyframesnap(subs,sel,rks,rke)
     keyframes=aegisub.keyframes()
     ms2fr=aegisub.frame_from_ms
     fr2ms=aegisub.ms_from_frame
@@ -248,21 +248,27 @@ function keyframesnap(subs,sel)
 	startf=ms2fr(start)
 	endf=ms2fr(endt)
 	diff=250	diffe=250
-	KS=0		KE=0
+	KS=rks		KE=rke
 	startkf=keyframes[1]
 	endkf=keyframes[#keyframes]
 	
 	-- snap to keyframes
+	if KS==0 then sdiff=215784 skf=nil end
+	if KE==0 then ediff=215784 ekf=nil end
 	for k,kf in ipairs(keyframes) do
-	    if kf>=startf-kfsa and kf<=startf+kfsb then
-		sdiff=math.abs(startf-kf)
-		if sdiff<=diff then diff=sdiff startkf=kf startn=fr2ms(startkf) KS=1 end
-	    end
-	    if kf>=endf-kfea and kf<=endf+kfeb then
-		ediff=math.abs(endf-kf)
-		if ediff<diffe then diffe=ediff endkf=kf endtn=fr2ms(endkf) KE=1 end
-	    end
+		if KS==0 and kf>=startf-kfsa and kf<=startf+kfsb then
+			if sdiff>math.abs(startf-kf) then
+				skf=kf sdiff=math.abs(startf-kf)
+			end
+		end
+	    if KE==0 and kf>=endf-kfea and kf<=endf+kfeb then
+			if ediff>=math.abs(endf-kf) then
+				ekf=kf ediff=math.abs(endf-kf)
+			end
+		end
 	end
+	if KS==0 and skf ~= nil then diff=sdiff startkf=skf startn=fr2ms(startkf) KS=1 end
+	if KE==0 and ekf ~= nil then diffe=ediff endkf=ekf endtn=fr2ms(endkf) KE=1 end
 	
 	-- snap to adjacent lines
 	if KS==0 then
@@ -276,7 +282,7 @@ function keyframesnap(subs,sel)
 		l2.end_time=fr2ms(ms2fr(prevend))
 		subs[i-1]=l2
 	    end
-	 end
+	end
 	end
 	if KE==0 then
 	  if subs[i+1] then
@@ -304,6 +310,9 @@ function keyframesnap(subs,sel)
     return sel
 end
 
+function keyframesnapstart(subs,sel) keyframesnap(subs,sel,0,1) end
+function keyframesnapend(subs,sel) keyframesnap(subs,sel,1,0) end
+
 function esc(str) str=str:gsub("[%%%(%)%[%]%.%-%+%*%?%^%$]","%%%1") return str end
 function logg(m) m=m or "nil" aegisub.log("\n "..m) end
 
@@ -311,10 +320,12 @@ if haveDepCtrl then
   depRec:registerMacros({
 	{"Join-Split-Snap/Join","Joins lines",join},
 	{"Join-Split-Snap/Split","Splits Lines",split},
-	{"Join-Split-Snap/Snap to keyframes","Snaps to nearby keyframes",keyframesnap},
+	{"Join-Split-Snap/Snap start to keyframes","Snaps start to nearby keyframes",keyframesnapstart},
+	{"Join-Split-Snap/Snap end to keyframes","Snaps end to nearby keyframes",keyframesnapend},
   },false)
 else
 	aegisub.register_macro("Join-Split-Snap/Join","Joins lines",join)
 	aegisub.register_macro("Join-Split-Snap/Split","Splits Lines",split)
-	aegisub.register_macro("Join-Split-Snap/Snap to keyframes","Snaps to nearby keyframes",keyframesnap)
+	aegisub.register_macro("Join-Split-Snap/Snap start to keyframes","Snaps start to nearby keyframes",keyframesnapstart)
+	aegisub.register_macro("Join-Split-Snap/Snap end to keyframes","Snaps end to nearby keyframes",keyframesnapend)
 end
