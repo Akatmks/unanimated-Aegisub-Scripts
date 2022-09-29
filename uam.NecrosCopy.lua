@@ -1,14 +1,14 @@
 script_name="NecrosCopy"
 script_description="Copy and fax things in the shadows while lines are splitting and breaking"
-script_author="reanimated"
-script_version="4.1"
-script_namespace="ua.NecrosCopy"
+script_author="reanimated, modified by Akatsumekusa"
+script_version="4.1m"
+script_namespace="uam.NecrosCopy"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-	script_version="4.1.0"
-	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
-end
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+-- 	script_version="4.1.0"
+-- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
+-- end
 
 re=require'aegisub.re'
 
@@ -19,8 +19,8 @@ function fucks(subs,sel)
 		t=l.text
 		
 		if not t:match("\\i?clip%(m") and not t:match("//i?clip%(m") then t_error("Missing \\clip on line #"..i-line0..".",1) end
-		cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4=t:match("clip%(m ([%d%-]+) ([%d%-]+) l ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+)")
-		if not cx1 then cx1,cy1,cx2,cy2=t:match("clip%(m ([%d%-]+) ([%d%-]+) l ([%d%-]+) ([%d%-]+)") end
+		cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4=t:match("clip%(m ([%d.-]+) ([%d.-]+) l ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+)")
+		if not cx1 then cx1,cy1,cx2,cy2=t:match("clip%(m ([%d.-]+) ([%d.-]+) l ([%d.-]+) ([%d.-]+)") end
 		if not cx1 then t_error("Line #"..i-line0..": Not enough clip points. 2 required.",1) end
 		sr=stylechk(subs,l.style)
 		nontra=t:gsub("\\t%b()","")
@@ -79,8 +79,8 @@ function frozt(subs,sel)
 		local l=subs[i]
 		local text=l.text
 		if not text:match("\\i?clip%(m") and not text:match("//i?clip%(m") then t_error("Missing \\clip on line #"..i-line0..".\nAborting.",1) end
-		cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4=text:match("clip%(m ([%d%-]+) ([%d%-]+) l ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+) ([%d%-]+)")
-		if not cx1 then cx1,cy1,cx2,cy2=text:match("clip%(m ([%d%-]+) ([%d%-]+) l ([%d%-]+) ([%d%-]+)") end
+		cx1,cy1,cx2,cy2,cx3,cy3,cx4,cy4=text:match("clip%(m ([%d.-]+) ([%d.-]+) l ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+) ([%d.-]+)")
+		if not cx1 then cx1,cy1,cx2,cy2=text:match("clip%(m ([%d.-]+) ([%d.-]+) l ([%d.-]+) ([%d.-]+)") end
 		if not cx1 then t_error("Line #"..i-line0..": Not enough clip points. 2 required.",1) end
 		local ad,op,tang,ang1,rota
 		ad=cx2-cx1
