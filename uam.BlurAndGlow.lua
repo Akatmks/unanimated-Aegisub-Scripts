@@ -16,16 +16,16 @@
 
 script_name="Blur and Glow"
 script_description="Add blur and/or glow to signs"
-script_author="unanimated"
+script_author="unanimated, modified by Akatsumekusa"
 script_url="http://unanimated.xtreemhost.com/ts/blur-and-glow.lua"
-script_version="2.5"
-script_namespace="ua.BlurAndGlow"
+script_version="2.5m"
+script_namespace="uam.BlurAndGlow"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-  script_version="2.5.0"
-  depRec=DependencyControl{feed="https://raw.githubusercontent.com/TypesettingTools/unanimated-Aegisub-Scripts/master/DependencyControl.json"}
-end
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+--   script_version="2.5.0"
+--   depRec=DependencyControl{feed="https://raw.githubusercontent.com/TypesettingTools/unanimated-Aegisub-Scripts/master/DependencyControl.json"}
+-- end
 
 
 function glow(subs,sel)
@@ -110,7 +110,8 @@ function glow(subs,sel)
 		if res.botalpha and line.text:match("\\fad%(") then text=botalfa(text) end
 		line.layer=line.layer-2
 		line.text=text
-		sls=2
+		if not res.onlyg then sls=2
+		else sls = 1 end
 
 	    end
 
