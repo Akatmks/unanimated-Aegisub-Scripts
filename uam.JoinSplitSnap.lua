@@ -221,14 +221,14 @@ function keyframesnap(subs,sel,rks,rke)
     fr2ms=aegisub.ms_from_frame
     if subs[sel[1]].effect=="gui" then
 	gui={
-	{x=0,y=0,class="label",label="Starts before "},
-	{x=0,y=1,class="label",label="Ends before "},
-	{x=0,y=2,class="label",label="Starts after "},
-	{x=0,y=3,class="label",label="Ends after "},
-	{x=1,y=0,class="floatedit",name="sb",value=6},
-	{x=1,y=1,class="floatedit",name="eb",value=10},
-	{x=1,y=2,class="floatedit",name="sa",value=8},
-	{x=1,y=3,class="floatedit",name="ea",value=15}
+	{x=0,y=0,class="label",label="kf before line start "},
+	{x=0,y=1,class="label",label="kf after line start "},
+	{x=0,y=2,class="label",label="kf before line end "},
+	{x=0,y=3,class="label",label="kf after line end "},
+	{x=1,y=0,class="floatedit",name="sa",value=kfsa},
+	{x=1,y=1,class="floatedit",name="sb",value=kfsb},
+	{x=1,y=2,class="floatedit",name="ea",value=kfea},
+	{x=1,y=3,class="floatedit",name="eb",value=kfeb}
 	}
 	buttons={"OK","Cancel"}
 	pressed,res=aegisub.dialog.display(gui,buttons,{ok='OK',close='Cancel'})
@@ -248,7 +248,7 @@ function keyframesnap(subs,sel,rks,rke)
 	startf=ms2fr(start)
 	endf=ms2fr(endt)
 	diff=250	diffe=250
-	KS=rks		KE=rke
+	KS=1-rks		KE=1-rke
 	startkf=keyframes[1]
 	endkf=keyframes[#keyframes]
 	
@@ -282,7 +282,7 @@ function keyframesnap(subs,sel,rks,rke)
 		l2.end_time=fr2ms(ms2fr(prevend))
 		subs[i-1]=l2
 	    end
-	end
+	  end
 	end
 	if KE==0 then
 	  if subs[i+1] then
@@ -310,8 +310,9 @@ function keyframesnap(subs,sel,rks,rke)
     return sel
 end
 
-function keyframesnapstart(subs,sel) keyframesnap(subs,sel,0,1) end
-function keyframesnapend(subs,sel) keyframesnap(subs,sel,1,0) end
+function keyframesnapstart(subs,sel) keyframesnap(subs,sel,1,0) end
+function keyframesnapend(subs,sel) keyframesnap(subs,sel,0,1) end
+function keyframesnapstartandend(subs,sel) keyframesnap(subs,sel,1,1) end
 
 function esc(str) str=str:gsub("[%%%(%)%[%]%.%-%+%*%?%^%$]","%%%1") return str end
 function logg(m) m=m or "nil" aegisub.log("\n "..m) end
@@ -320,12 +321,14 @@ if haveDepCtrl then
   depRec:registerMacros({
 	{"Join-Split-Snap/Join","Joins lines",join},
 	{"Join-Split-Snap/Split","Splits Lines",split},
+	{"Join-Split-Snap/Snap to keyframes","Snaps to nearby keyframes",keyframesnapstartandend},
 	{"Join-Split-Snap/Snap start to keyframes","Snaps start to nearby keyframes",keyframesnapstart},
 	{"Join-Split-Snap/Snap end to keyframes","Snaps end to nearby keyframes",keyframesnapend},
   },false)
 else
 	aegisub.register_macro("Join-Split-Snap/Join","Joins lines",join)
 	aegisub.register_macro("Join-Split-Snap/Split","Splits Lines",split)
+	aegisub.register_macro("Join-Split-Snap/Snap to keyframes","Snaps to nearby keyframes",keyframesnapstartandend)
 	aegisub.register_macro("Join-Split-Snap/Snap start to keyframes","Snaps start to nearby keyframes",keyframesnapstart)
 	aegisub.register_macro("Join-Split-Snap/Snap end to keyframes","Snaps end to nearby keyframes",keyframesnapend)
 end
