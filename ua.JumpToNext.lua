@@ -1,167 +1,154 @@
--- This is meant to get you to the "next sign" in the subtitle grid. (or previous)
--- When mocha-tracking over 1000 lines, it can be a pain in the ass to find where one sign ends and another begins.
--- Select lines that belong to the current "sign", i.e. all different layers/masks/texts.
--- The script will search from there for the first line in the grid that doesn't match any of the selected ones with "text", "style", etc.
+-- Manual: http://unanimated.hostfree.pw/ts/scripts-manuals.htm#cycle
 
-script_name="Jump to Next"
-script_description="Jumps to next 'sign' in the subtitle grid"
-script_description2="Jumps to previous 'sign' in the subtitle grid"
-script_author="unanimated"
-script_version="2.0"
-script_namespace="ua.JumpToNext"
+script_name="Cycles"
+script_description="Cycles blur, border, shadow, alpha, alignment, font spacing"
+script_author="unanimated, modified by Akatsumekusa"
+script_version="2.0m"
+script_namespace="uam.Cycles"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-  script_version="2.0.0"
-  depRec=DependencyControl{feed="https://raw.githubusercontent.com/TypesettingTools/unanimated-Aegisub-Scripts/master/DependencyControl.json"}
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+-- 	script_version="2.0.0"
+-- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
+-- end
+
+config = require("aka/config/config")
+
+function config_validation_func(config_data)
+	local error_count local error_msg
+	error_count = 0 error_msg = {}
+	if not config_data then
+		error_count = error_count + 1 table.insert(error_msg, "Root object not found")
+	else
+		for _, v in ipairs({ "align_sequence", "alpha_sequence", "blur_sequence", "bord_sequence", "fsp_sequence", "shad_sequence" }) do
+			if not config_data[v] then
+				error_count = error_count + 1 table.insert(error_msg, "\"" .. v .. "\" not found")
+			else
+				for k, w in ipairs(config_data[v]) do
+					if not tonumber(w) then
+						error_count = error_count + 1 table.insert(error_msg, "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number")
+	end end end end end
+	if error_count == 0 then return true
+	else return error_count, error_msg
+end end
+config_templates = { unanimated = [[{
+	"align_sequence": [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ],
+	"alpha_sequence": [ "FF", "00", "10", "30", "60", "80", "A0", "C0", "E0" ],
+	"blur_sequence": [ "0.6", "0.8", "1", "1.2", "1.5", "2", "2.5", "3", "4", "5", "6", "8", "10", "0.4", "0.5" ],
+	"bord_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "20" ],
+	"fsp_sequence": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "10", "12", "15", "20", "30" ],
+	"shad_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ]
+}]] }
+
+function check_config()
+	if not config_data then
+		is_success, config_data = config.read_config("uam.Cycles", "", config_validation_func)
+		if not is_success then
+			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, "uam.Cycles", config_templates, true)
+			if not is_success then aegisub.cancel() end
+		end
+	end
+	align_sequence = config_data["align_sequence"]
+	alpha_sequence = config_data["alpha_sequence"]
+	blur_sequence = config_data["blur_sequence"]
+	bord_sequence = config_data["bord_sequence"]
+	fsp_sequence = config_data["fsp_sequence"]
+	shad_sequence = config_data["shad_sequence"]
 end
 
-ak=aegisub.cancel
+--[[ Adding more tags
+You could make this also work for the following tags: frz, frx, fry, fax, fay, fs, fscx, fscy, be, xbord, xshad, ybord, yshad
+by doing 3 things:
+1. add a new sequence to the settings above for the tag you want to add
+2. add a function below here based on what the others look like (it's adjusted for negative values too)
+3. add "aegisub.register_macro("Cycles/YOUR_SCRIPT_NAME","Cycles WHATEVER_YOU_CHOOSE",FUNCTION_NAME_HERE)" at the end of the script
+If you at least roughly understand the basics, this should be easy. The main cycle function remains the same for all tags.
+Should you want to add other tags with different value patterns, check the existing exceptions for alpha in the cycle function.]]
 
-function nextsel(subs,sel)
-getinfo(subs,sel)
-if j==#subs then ak() end
-count=1
-repeat
-  line=subs[j+count]
-  markers()
-  ch=0
-  for m=1,#marks do if marks[m]==hit then ch=1 end end
-  if ch==0 or j+count==#subs then sel={j+count} end
-  count=count+1
-until ch==0 or hit==nil or j+count>#subs
-return sel
+function blur(subs,sel) check_config() cycle(subs,sel,"blur",blur_sequence) end
+function bord(subs,sel) check_config() cycle(subs,sel,"bord",bord_sequence) end
+function shad(subs,sel) check_config() cycle(subs,sel,"shad",shad_sequence) end
+function alph(subs,sel) check_config() cycle(subs,sel,"alpha",alpha_sequence) end
+function algn(subs,sel) check_config() cycle(subs,sel,"an",align_sequence) end
+function fsp(subs,sel) check_config() cycle(subs,sel,"fsp",fsp_sequence) end
+
+function cycle(subs,sel,tag,sequence)
+    if tag=="alpha" then base=16 else base=10 end
+    for z,i in ipairs(sel) do
+	line=subs[i]
+	text=line.text
+	local back
+	if line.comment or text:match'{switch}$' then back=true end
+	text=text:gsub("\\t(%b())",function(t) return "\\t"..t:gsub("\\","|") end)
+
+	if tag=="alpha" then val1=text:match("^{[^}]-\\alpha&H(%x%x)&") else val1=text:match("^{[^}]-\\"..tag.."(%-?[%d%.]+)") end
+	if val1 then
+		for n=1,#sequence do
+		  N=n+1
+		  if back then N=n-1 end
+		  if N==0 then N=#sequence end
+		  if val1==sequence[n] then val2=sequence[N] or sequence[1] break end
+		end
+		if val2==nil then
+		  for n=1,#sequence do
+		    if n>1 or sequence[1]~="FF" then
+		      local N=n
+		      if back then N=n-1 end
+		      if N==0 then N=#sequence end
+		      if tonumber(val1,base)<tonumber(sequence[n],base) then val2=sequence[N] break end
+		    end
+		  end
+		end
+		if val2==nil then if back then val2=sequence[#sequence] else val2=sequence[1] end end
+		if tag=="alpha" then
+		  text=text:gsub("^({[^}]-\\alpha&H)%x%x","%1"..val2)
+		else
+		  text=text:gsub("^({[^}]-\\"..tag..")%-?[%d%.]+","%1"..val2)
+		end
+		val2=nil
+	else
+		text="{\\"..tag..sequence[1].."}"..text
+		text=text:gsub("alpha(%x%x)}","alpha&H%1&}")
+		:gsub("{(\\.-)}{\\","{%1\\")
+	end
+
+	text=text:gsub("{\\[^}]-}",function(t) return t:gsub("|","\\") end)
+	line.text=text
+	subs[i]=line
+    end
 end
 
-function prevsel(subs,sel)
-getinfo(subs,sel)
-if subs[i-1].class~="dialogue" then ak() end
-count=1
-repeat
-  line=subs[i-count]
-  markers()
-  ch=0
-  for m=1,#marks do if marks[m]==hit then ch=1 end end
-  if ch==0 or subs[i-count-1].class~="dialogue" then sel={i-count} end
-  count=count+1
-until ch==0 or hit==nil or subs[i-count].class~="dialogue"
-return sel
-end
-
-function getinfo(subs,sel)
-lm=nil
-i=sel[1]
-j=sel[#sel]
-marks={}
- for z,i in ipairs(sel) do
-  rine=subs[i]
-  if marker=="text" then mark=rine.text:gsub("%b{}","") end
-  if marker=="style" then mark=rine.style end
-  if marker=="actor" then mark=rine.actor end
-  if marker=="effect" then mark=rine.effect end
-  if marker=="layer" then mark=rine.layer end
-  if mark~=lm then table.insert(marks,mark) end
-  lm=mark
- end
-end
-
-function markers()
-  if marker=="text" then hit=line.text:gsub("%b{}","") end
-  if marker=="style" then hit=line.style end
-  if marker=="actor" then hit=line.actor end
-  if marker=="effect" then hit=line.effect end
-  if marker=="layer" then hit=line.layer end
-end
-
-function nextcom(subs,sel)
-j=sel[#sel]
-if j==#subs then ak() end
-repeat
-  j=j+1
-  line=subs[j]
-  if j==#subs then sel={j} end
-  if line.comment then sel={j} end
-until line.comment or j==#subs
-return sel
-end
-
-function prevcom(subs,sel)
-i=sel[1]
-repeat
-  i=i-1
-  line=subs[i]
-  if line.class~="dialogue" then sel={i+1} end
-  if line.comment then sel={i} end
-until line.comment or line.class~="dialogue"
-return sel
+function switch(subs,sel)
+    for z,i in ipairs(sel) do
+	l=subs[i]
+	t=l.text
+	t=t.."{switch}"
+	t=t:gsub("{switch}{switch}$","")
+	l.text=t
+	subs[i]=l
+    end
 end
 
 function logg(m) m=m or "nil" aegisub.log("\n "..m) end
 
-function nextT(subs,sel) marker="text" sel=nextsel(subs,sel) return sel end
-function nextS(subs,sel) marker="style" sel=nextsel(subs,sel) return sel end
-function nextA(subs,sel) marker="actor" sel=nextsel(subs,sel) return sel end
-function nextE(subs,sel) marker="effect" sel=nextsel(subs,sel) return sel end
-function nextL(subs,sel) marker="layer" sel=nextsel(subs,sel) return sel end
-function nextC(subs,sel) sel=nextcom(subs,sel) return sel end
-
-function prevT(subs,sel) marker="text" sel=prevsel(subs,sel) return sel end
-function prevS(subs,sel) marker="style" sel=prevsel(subs,sel) return sel end
-function prevA(subs,sel) marker="actor" sel=prevsel(subs,sel) return sel end
-function prevE(subs,sel) marker="effect" sel=prevsel(subs,sel) return sel end
-function prevL(subs,sel) marker="layer" sel=prevsel(subs,sel) return sel end
-function prevC(subs,sel) sel=prevcom(subs,sel) return sel end
-
-function nextG(subs,sel)
-GUI={{class="label",label="Jump to Next..."},{x=1,class="checkbox",name="prev",label="Jump to Previous"}}
-P,res=aegisub.dialog.display(GUI,{"Text","Style","Actor","Effect","Layer","Comment","X"},{ok='Text',close='X'})
-if P=="X" then ak() end
-if res.prev then
-	if P=="Text" then marker="text" sel=prevsel(subs,sel) end
-	if P=="Style" then marker="style" sel=prevsel(subs,sel) end
-	if P=="Actor" then marker="actor" sel=prevsel(subs,sel) end
-	if P=="Effect" then marker="effect" sel=prevsel(subs,sel) end
-	if P=="Layer" then marker="layer" sel=prevsel(subs,sel) end
-	if P=="Comment" then sel=prevcom(subs,sel) end
-else
-	if P=="Text" then marker="text" sel=nextsel(subs,sel) end
-	if P=="Style" then marker="style" sel=nextsel(subs,sel) end
-	if P=="Actor" then marker="actor" sel=nextsel(subs,sel) end
-	if P=="Effect" then marker="effect" sel=nextsel(subs,sel) end
-	if P=="Layer" then marker="layer" sel=nextsel(subs,sel) end
-	if P=="Comment" then sel=nextcom(subs,sel) end
-end
-return sel
-end
-
 if haveDepCtrl then
-   depRec:registerMacros({
-	{"Jump to Next/_GUI",script_description,nextG},
-	{"Jump to Next/Text",script_description,nextT},
-	{"Jump to Next/Style",script_description,nextS},
-	{"Jump to Next/Actor",script_description,nextA},
-	{"Jump to Next/Effect",script_description,nextE},
-	{"Jump to Next/Layer",script_description,nextL},
-	{"Jump to Next/Commented Line",script_description,nextC},
-	{"Jump to Previous/Text",script_description2,prevT},
-	{"Jump to Previous/Style",script_description2,prevS},
-	{"Jump to Previous/Actor",script_description2,prevA},
-	{"Jump to Previous/Effect",script_description2,prevE},
-	{"Jump to Previous/Layer",script_description2,prevL},
-	{"Jump to Previous/Commented Line",script_description2,prevC},
-   },false)
+    depRec:registerMacros({
+	{"Cycles/Blur Cycle","Cycles Blur",blur},
+	{"Cycles/Border Cycle","Cycles Border",bord},
+	{"Cycles/Shadow Cycle","Cycles Shadow",shad},
+	{"Cycles/Alpha Cycle","Cycles Alpha",alph},
+	{"Cycles/Alignment Cycle","Cycles Alignment",algn},
+	{"Cycles/FontSpacing Cycle","Cycles Font Spacing",fsp},
+	{"Cycles/Switch","Switches sequence direction",switch},
+    },false)
 else
-	aegisub.register_macro("Jump to Next/_GUI",script_description,nextG)
-	aegisub.register_macro("Jump to Next/Text",script_description,nextT)
-	aegisub.register_macro("Jump to Next/Style",script_description,nextS)
-	aegisub.register_macro("Jump to Next/Actor",script_description,nextA)
-	aegisub.register_macro("Jump to Next/Effect",script_description,nextE)
-	aegisub.register_macro("Jump to Next/Layer",script_description,nextL)
-	aegisub.register_macro("Jump to Next/Commented Line",script_description,nextC)
-	aegisub.register_macro("Jump to Previous/Text",script_description2,prevT)
-	aegisub.register_macro("Jump to Previous/Style",script_description2,prevS)
-	aegisub.register_macro("Jump to Previous/Actor",script_description2,prevA)
-	aegisub.register_macro("Jump to Previous/Effect",script_description2,prevE)
-	aegisub.register_macro("Jump to Previous/Layer",script_description2,prevL)
-	aegisub.register_macro("Jump to Previous/Commented Line",script_description2,prevC)
+	aegisub.register_macro("Cycles/Blur Cycle","Cycles Blur",blur)
+	aegisub.register_macro("Cycles/Border Cycle","Cycles Border",bord)
+	aegisub.register_macro("Cycles/Shadow Cycle","Cycles Shadow",shad)
+	aegisub.register_macro("Cycles/Alpha Cycle","Cycles Alpha",alph)
+	aegisub.register_macro("Cycles/Alignment Cycle","Cycles Alignment",algn)
+	aegisub.register_macro("Cycles/FontSpacing Cycle","Cycles Font Spacing",fsp)
+	aegisub.register_macro("Cycles/Switch","Switches sequence direction",switch)
 end
+
+aegisub.register_macro("Cycles/Edit settings", "Edit uam.Cycles settings", function() config.edit_config_gui("uam.Cycles", "", config_validation_func, "uam.Cycles", config_templates) end)

@@ -2,23 +2,60 @@
 
 script_name="Cycles"
 script_description="Cycles blur, border, shadow, alpha, alignment, font spacing"
-script_author="unanimated"
-script_version="2.0"
-script_namespace="ua.Cycles"
+script_author="unanimated, modified by Akatsumekusa"
+script_version="2.0m"
+script_namespace="uam.Cycles"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-	script_version="2.0.0"
-	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+-- 	script_version="2.0.0"
+-- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
+-- end
+
+config = require("aka.config.config")
+
+function config_validation_func(config_data)
+	local error_count local error_msg
+	error_count = 0 error_msg = {}
+	if not config_data then
+		error_count = error_count + 1 table.insert(error_msg, "Root object not found")
+	else
+		for _, v in ipairs({ "align_sequence", "alpha_sequence", "blur_sequence", "bord_sequence", "fsp_sequence", "shad_sequence" }) do
+			if not config_data[v] then
+				error_count = error_count + 1 table.insert(error_msg, "\"" .. v .. "\" not found")
+			else
+				for k, w in ipairs(config_data[v]) do
+					if not tonumber(w) and not tonumber("0x" .. w) then
+						error_count = error_count + 1 table.insert(error_msg, "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number")
+	end end end end end
+	if error_count == 0 then return true
+	else return error_count, error_msg
+end end
+config_templates = { unanimated = [[{
+  "align_sequence": [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ],
+  "alpha_sequence": [ "FF", "00", "10", "30", "60", "80", "A0", "C0", "E0" ],
+  "blur_sequence": [ "0.6", "0.8", "1", "1.2", "1.5", "2", "2.5", "3", "4", "5", "6", "8", "10", "0.4", "0.5" ],
+  "bord_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "20" ],
+  "fsp_sequence": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "10", "12", "15", "20", "30" ],
+  "shad_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ]
+}]] }
+
+function check_config()
+	if not config_data then
+		is_success, config_data = config.read_config("uam.Cycles", "", config_validation_func)
+		if not is_success then
+			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", config_templates, true)
+			if not is_success then aegisub.cancel() end
+		end
+		align_sequence = config_data["align_sequence"]
+		alpha_sequence = config_data["alpha_sequence"]
+		blur_sequence = config_data["blur_sequence"]
+		bord_sequence = config_data["bord_sequence"]
+		fsp_sequence = config_data["fsp_sequence"]
+		shad_sequence = config_data["shad_sequence"]
+		aegisub.cancel()
+	end
 end
-
--- SETTINGS - You can change these sequences
-blur_sequence={"0.6","0.8","1","1.2","1.5","2","2.5","3","4","5","6","8","10","0.4","0.5"}
-bord_sequence={"0","1","1.5","2","2.5","3","4","5","6","7","8","9","10","11","12","15","20"}
-shad_sequence={"0","1","1.5","2","2.5","3","4","5","6","7","8","9","10","11","12"}
-alpha_sequence={"FF","00","10","30","60","80","A0","C0","E0"}
-align_sequence={"1","2","3","4","5","6","7","8","9"}
-fsp_sequence={"0","1","2","3","4","5","6","7","8","10","12","15","20","30"}
 
 --[[ Adding more tags
 You could make this also work for the following tags: frz, frx, fry, fax, fay, fs, fscx, fscy, be, xbord, xshad, ybord, yshad
@@ -29,12 +66,12 @@ by doing 3 things:
 If you at least roughly understand the basics, this should be easy. The main cycle function remains the same for all tags.
 Should you want to add other tags with different value patterns, check the existing exceptions for alpha in the cycle function.]]
 
-function blur(subs,sel) cycle(subs,sel,"blur",blur_sequence) end
-function bord(subs,sel) cycle(subs,sel,"bord",bord_sequence) end
-function shad(subs,sel) cycle(subs,sel,"shad",shad_sequence) end
-function alph(subs,sel) cycle(subs,sel,"alpha",alpha_sequence) end
-function algn(subs,sel) cycle(subs,sel,"an",align_sequence) end
-function fsp(subs,sel) cycle(subs,sel,"fsp",fsp_sequence) end
+function blur(subs,sel) check_config() cycle(subs,sel,"blur",blur_sequence) end
+function bord(subs,sel) check_config() cycle(subs,sel,"bord",bord_sequence) end
+function shad(subs,sel) check_config() cycle(subs,sel,"shad",shad_sequence) end
+function alph(subs,sel) check_config() cycle(subs,sel,"alpha",alpha_sequence) end
+function algn(subs,sel) check_config() cycle(subs,sel,"an",align_sequence) end
+function fsp(subs,sel) check_config() cycle(subs,sel,"fsp",fsp_sequence) end
 
 function cycle(subs,sel,tag,sequence)
     if tag=="alpha" then base=16 else base=10 end
@@ -114,3 +151,5 @@ else
 	aegisub.register_macro("Cycles/FontSpacing Cycle","Cycles Font Spacing",fsp)
 	aegisub.register_macro("Cycles/Switch","Switches sequence direction",switch)
 end
+
+aegisub.register_macro("Cycles/Edit Settings", "Edit uam.Cycles Settings", function() config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", config_templates) end)
