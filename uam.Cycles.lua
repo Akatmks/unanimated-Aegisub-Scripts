@@ -44,7 +44,7 @@ function check_config()
 	if not config_data then
 		is_success, config_data = config.read_config("uam.Cycles", "", config_validation_func)
 		if not is_success then
-			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", config_templates, true)
+			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates, true)
 			if not is_success then aegisub.cancel() end
 		end
 		align_sequence = config_data["align_sequence"]
@@ -53,7 +53,6 @@ function check_config()
 		bord_sequence = config_data["bord_sequence"]
 		fsp_sequence = config_data["fsp_sequence"]
 		shad_sequence = config_data["shad_sequence"]
-		aegisub.cancel()
 	end
 end
 
@@ -152,4 +151,4 @@ else
 	aegisub.register_macro("Cycles/Switch","Switches sequence direction",switch)
 end
 
-aegisub.register_macro("Cycles/Edit Settings", "Edit uam.Cycles Settings", function() config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", config_templates) end)
+aegisub.register_macro("Cycles/Edit Settings", "Edit uam.Cycles Settings", function() config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates) end)
