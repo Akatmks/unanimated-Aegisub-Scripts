@@ -55,6 +55,16 @@ function check_config()
 		shad_sequence = config_data["shad_sequence"]
 	end
 end
+function edit_config()
+	is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates)
+	if not is_success then aegisub.cancel() end
+	align_sequence = config_data["align_sequence"]
+	alpha_sequence = config_data["alpha_sequence"]
+	blur_sequence = config_data["blur_sequence"]
+	bord_sequence = config_data["bord_sequence"]
+	fsp_sequence = config_data["fsp_sequence"]
+	shad_sequence = config_data["shad_sequence"]
+end
 
 --[[ Adding more tags
 You could make this also work for the following tags: frz, frx, fry, fax, fay, fs, fscx, fscy, be, xbord, xshad, ybord, yshad
@@ -151,4 +161,4 @@ else
 	aegisub.register_macro("Cycles/Switch","Switches sequence direction",switch)
 end
 
-aegisub.register_macro("Cycles/Edit Settings", "Edit uam.Cycles Settings", function() config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates) end)
+aegisub.register_macro("Cycles/Edit Settings", "Edit uam.Cycles Settings", edit_config)
