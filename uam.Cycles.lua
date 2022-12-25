@@ -12,25 +12,25 @@ script_namespace="uam.Cycles"
 -- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
 -- end
 
-config = require("aka.config.config")
+config = require("aka.config")
 
 function config_validation_func(config_data)
-	local error_count local error_msg
-	error_count = 0 error_msg = {}
+	local error_msg_count local error_msg
+	error_msg_count = 0 error_msg = {}
 	if not config_data then
-		error_count = error_count + 1 table.insert(error_msg, "Root object not found")
+		error_msg_count = error_msg_count + 1 table.insert(error_msg, "Root object not found")
 	else
 		for _, v in ipairs({ "align_sequence", "alpha_sequence", "blur_sequence", "bord_sequence", "fsp_sequence", "shad_sequence" }) do
 			if not config_data[v] then
-				error_count = error_count + 1 table.insert(error_msg, "\"" .. v .. "\" not found")
+				error_msg_count = error_msg_count + 1 table.insert(error_msg, "\"" .. v .. "\" not found")
 			else
 				for k, w in ipairs(config_data[v]) do
 					if not tonumber(w) and not tonumber("0x" .. w) then
-						error_count = error_count + 1 table.insert(error_msg, "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number")
+						error_msg_count = error_msg_count + 1 table.insert(error_msg, "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number")
 	end end end end end
-	if error_count == 0 then return true
-	else return error_count, error_msg
-end end
+	if error_msg_count == 0 then return true
+	else return error_msg_count, error_msg end
+end
 config_templates = { unanimated = [[{
   "align_sequence": [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ],
   "alpha_sequence": [ "FF", "00", "10", "30", "60", "80", "A0", "C0", "E0" ],
@@ -44,8 +44,9 @@ function check_config()
 	if not config_data then
 		is_success, config_data = config.read_config("uam.Cycles", "", config_validation_func)
 		if not is_success then
-			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates, true)
+			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates, true)
 			if not is_success then aegisub.cancel() end
+			assert(is_success)
 		end
 		align_sequence = config_data["align_sequence"]
 		alpha_sequence = config_data["alpha_sequence"]
@@ -56,7 +57,7 @@ function check_config()
 	end
 end
 function edit_config()
-	is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates)
+	is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates)
 	if not is_success then aegisub.cancel() end
 	align_sequence = config_data["align_sequence"]
 	alpha_sequence = config_data["alpha_sequence"]
