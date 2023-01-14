@@ -1,6 +1,6 @@
 ## Bugfix and feature fork for ua's Aegisub scripts  
 
-Manuals for all scripts: http://unanimated.hostfree.pw/ts/scripts-manuals.htm  
+Manuals for all scripts: https://unanimated.github.io/ts/scripts-manuals.htm  
 
 *Changelog:*  
 
