@@ -12,42 +12,57 @@ script_namespace="uam.Cycles"
 -- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
 -- end
 
-config = require("aka.config")
-
+config = require("aka.config").make_editor({
+	["display_name"] = "Cycles",
+	["width"] = 36,
+	["height"] = 24,
+	["presets"] = {
+		["unanimated"] = [[{
+	"align_sequence": [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ],
+	"alpha_sequence": [ "FF", "00", "10", "30", "60", "80", "A0", "C0", "E0" ],
+	"blur_sequence": [ "0.6", "0.8", "1", "1.2", "1.5", "2", "2.5", "3", "4", "5", "6", "8", "10", "0.4", "0.5" ],
+	"bord_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "20" ],
+	"fsp_sequence": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "10", "12", "15", "20", "30" ],
+	"shad_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ]		
+}]],
+		["Akatsumekusa"] = [[{
+	"align_sequence": [ "5", "8", "3", "6", "9", "1", "4", "7", "2" ],
+	"alpha_sequence": [ "00", "10", "20", "30", "40", "60", "80", "A0", "C0", "E0", "FF" ],
+	"blur_sequence": [ "0.5", "0.6", "0.8", "1", "1.2", "1.5", "2", "2.5", "3", "4", "5", "6", "8", "10", "0", "0.4" ],
+	"bord_sequence": [ "0", "0.8", "1", "1.2", "1.5", "1.8", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "20" ],
+	"fsp_sequence": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "10", "12", "15", "20", "30" ],
+	"shad_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ]
+}]]
+	},
+	["default"] = "unanimated"
+})
+outcome = require("aka.outcome")
+ok, err, o = outcome.ok, outcome.err, outcome.o
 function config_validation_func(config_data)
-	local error_msg_count local error_msg
-	error_msg_count = 0 error_msg = {}
+	local msg
+
 	if not config_data then
-		error_msg_count = error_msg_count + 1 table.insert(error_msg, "Root object not found")
+		msg = "Root object not found"
 	else
 		for _, v in ipairs({ "align_sequence", "alpha_sequence", "blur_sequence", "bord_sequence", "fsp_sequence", "shad_sequence" }) do
 			if not config_data[v] then
-				error_msg_count = error_msg_count + 1 table.insert(error_msg, "\"" .. v .. "\" not found")
+				if not msg then msg = "\"" .. v .. "\" not found"
+				else msg = msg .. "\n" .. "\"" .. v .. "\" not found" end
 			else
 				for k, w in ipairs(config_data[v]) do
 					if not tonumber(w) and not tonumber("0x" .. w) then
-						error_msg_count = error_msg_count + 1 table.insert(error_msg, "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number")
+						if not msg then msg = "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number"
+						else msg = msg .. "\n" .. "\"" .. w .. "\" at position " .. tostring(k) .. " in \"" .. v .. "\" not a number" end
 	end end end end end
-	if error_msg_count == 0 then return true
-	else return error_msg_count, error_msg end
+	if not msg then return ok(config_data)
+	else return err(msg) end
 end
-config_templates = { unanimated = [[{
-  "align_sequence": [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ],
-  "alpha_sequence": [ "FF", "00", "10", "30", "60", "80", "A0", "C0", "E0" ],
-  "blur_sequence": [ "0.6", "0.8", "1", "1.2", "1.5", "2", "2.5", "3", "4", "5", "6", "8", "10", "0.4", "0.5" ],
-  "bord_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "15", "20" ],
-  "fsp_sequence": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "10", "12", "15", "20", "30" ],
-  "shad_sequence": [ "0", "1", "1.5", "2", "2.5", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12" ]
-}]] }
 
 function check_config()
 	if not config_data then
-		is_success, config_data = config.read_config("uam.Cycles", "", config_validation_func)
-		if not is_success then
-			is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates, true)
-			if not is_success then aegisub.cancel() end
-			assert(is_success)
-		end
+		config_data = config:read_and_validate_config_or_else_edit_and_save("uam.Cycles", config_validation_func)
+			:ifErr(aegisub.cancel)
+			:unwrap()
 		align_sequence = config_data["align_sequence"]
 		alpha_sequence = config_data["alpha_sequence"]
 		blur_sequence = config_data["blur_sequence"]
@@ -57,8 +72,9 @@ function check_config()
 	end
 end
 function edit_config()
-	is_success, config_data = config.edit_config_gui("uam.Cycles", "", config_validation_func, nil, nil, "𝗖𝘆𝗰𝗹𝗲𝘀", "𝗦𝗲𝘁𝘁𝗶𝗻𝗴𝘀", "Preset", "𝗣𝗿𝗲𝘀𝗲𝘁𝘀", config_templates)
-	if not is_success then aegisub.cancel() end
+	config_data = config:read_edit_validate_and_save_config("uam.Cycles", config_validation_func)
+	    :ifErr(aegisub.cancel)
+		:unwrap()
 	align_sequence = config_data["align_sequence"]
 	alpha_sequence = config_data["alpha_sequence"]
 	blur_sequence = config_data["blur_sequence"]
