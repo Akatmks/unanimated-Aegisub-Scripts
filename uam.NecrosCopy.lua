@@ -58,7 +58,7 @@ function fucks(subs,sel)
 				faxdiff=(faks2-faks)/(#chars-1)
 				tt=chars[1]
 				for c=2,#chars do
-					if chars[c]==" " then tt=tt.." " else tt=tt.."{\\fax"..round((faks+faxdiff*(c-1))*100)/100 .."}"..chars[c] end
+					if chars[c]==" " then tt=tt.." " else tt=tt.."{\\fax"..round((faks+faxdiff*(c-1))*10000)/10000 .."}"..chars[c] end
 				end
 				t=tg..tt
 				if orig:match("{%*?\\") then t=retextmod(orig,t) end

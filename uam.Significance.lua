@@ -1,14 +1,14 @@
 script_name="Significance"
 script_description="Import stuff, number stuff, chapter stuff, replace stuff, do a significant amount of other stuff to stuff."
-script_author="unanimated"
-script_version="3.5"
-script_namespace="ua.Significance"
+script_author="unanimated, modified by Akatsumekusa"
+script_version="3.5m"
+script_namespace="uam.Significance"
 
-local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
-if haveDepCtrl then
-	script_version="3.5.0"
-	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
-end
+-- local haveDepCtrl,DependencyControl,depRec=pcall(require,"l0.DependencyControl")
+-- if haveDepCtrl then
+-- 	script_version="3.5.0"
+-- 	depRec=DependencyControl{feed="https://raw.githubusercontent.com/unanimated/luaegisub/master/DependencyControl.json"}
+-- end
 
 clipboard=require("aegisub.clipboard")
 re=require'aegisub.re'
@@ -610,7 +610,7 @@ function chopters(subs,sel)
 				if tc2<10 then tc2="0"..tc2 end
 				if tc3<100 then tc3="0"..tc3 end
 				linetime=tc4..":"..tc1..":"..tc2.."."..tc3
-				if linetime=="00:00:00.00" then linetime="00:00:00.033" end
+				-- if linetime=="00:00:00.00" then linetime="00:00:00.033" end
 				
 				if sub==0 then
 				cur_chptr={id=lineid,name=name,tim=linetime}
@@ -683,6 +683,7 @@ function chopters(subs,sel)
 		table.insert(chdialog,{x=35,y=q,width=12,name='ch_'..q,class="edit",value=chn})
 		q=q+1
 	end
+	::back::
 	repeat
 		if pressed=="Refresh" then
 			q=0
@@ -692,7 +693,7 @@ function chopters(subs,sel)
 				if v.name=='copytext' then v.value=reslt.copytext end
 			end
 		end
-	pressed,reslt=ADD(chdialog,{"Save xml file","mp4-compatible chapters","Cancel","Copy to clipboard","Refresh"},{cancel='Cancel'})
+	pressed,reslt=ADD(chdialog,{"Save xml file","Save xml file as","mp4-compatible chapters","Cancel","Copy to clipboard","Refresh"},{cancel='Cancel'})
 	until pressed~="Refresh"
 	chapters=reslt.copytext
 	if pressed=="Copy to clipboard" then clipboard.set(chapters) end
@@ -700,6 +701,14 @@ function chopters(subs,sel)
 		local file=io.open(path..filename..".xml","w")
 		if file==nil then os.execute("mkdir \""..path.."\"") file=io.open(path..filename..".xml","w") end
 		if file==nil then t_error("File could not be saved. Probably path doesn't exist:\n"..path,1) end
+		file:write(chapters)
+		file:close()
+	end
+	if pressed=="Save xml file as" then
+		local file=aegisub.dialog.save("Save xml file as...","","","")
+		if not file then goto back end
+		file=io.open(file,"w")
+		if file==nil then t_error("File could not be saved.\n",1) end
 		file:write(chapters)
 		file:close()
 	end
@@ -719,12 +728,21 @@ function chopters(subs,sel)
 		chdialog[2].value=chapters
 		chdialog[3].label=chdialog[3].label:gsub('%.xml','_chapters.txt')
 		for c=#chdialog,4,-1 do table.remove(chdialog,c) end
-		pressed,reslt=ADD(chdialog,{"Save txt file","Cancel","Copy to clipboard"},{cancel='Cancel'})
+		::back::
+		pressed,reslt=ADD(chdialog,{"Save txt file","Save txt file as","Cancel","Copy to clipboard"},{cancel='Cancel'})
 		chapters=reslt.copytext
 		if pressed=="Copy to clipboard" then clipboard.set(chapters) end
 		if pressed=="Save txt file" then
 			local file=io.open(path..filename.."_chapters.txt","w")
 			if file==nil then os.execute("mkdir \""..path.."\"") file=io.open(path..filename.."_chapters.txt","w") end
+			file:write(chapters)
+			file:close()
+		end
+		if pressed=="Save txt file as" then
+			local file=aegisub.dialog.save("Save txt file as...","","","")
+			if not file then goto back end
+			file=io.open(file,"w")
+			if file==nil then t_error("File could not be saved.\n",1) end
 			file:write(chapters)
 			file:close()
 		end
