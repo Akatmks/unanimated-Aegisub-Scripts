@@ -35,14 +35,14 @@ function fucks(subs,sel)
 		ang1=math.deg(math.atan(tang))
 		ang2=ang1-rota
 		tangf=math.tan(math.rad(ang2))
-		faks=round(tangf/scr*100)/100
+		faks=round(tangf/scr*10000)/10000
 		t=addtag("\\fax"..faks,t)
 		if cy4 then
 			tang2=((cx3-cx4)/(cy3-cy4))
 			ang3=math.deg(math.atan(tang2))
 			ang4=ang3-rota2
 			tangf2=math.tan(math.rad(ang4))
-			faks2=round(tangf2*100)/100
+			faks2=round(tangf2*10000)/10000
 			endcom=""
 			repeat t=t:gsub("({[^}]-})%s*$",function(ec) endcom=ec..endcom return "" end)
 			until not t:match("}$")
